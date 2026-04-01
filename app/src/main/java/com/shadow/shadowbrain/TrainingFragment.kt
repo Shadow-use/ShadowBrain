@@ -1,89 +1,61 @@
-// Responsibility: Повний інтерфейс з функціями очищення бази та перестворення мізків
+// Responsibility: UI для запуску автоматичного збору шрифтів та навчання
 package com.shadow.shadowbrain
 
 import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.fragment.app.Fragment
-import java.io.File
 
 class TrainingFragment : Fragment(R.layout.fragment_training) {
     private lateinit var uiController: UIController
     private lateinit var brainManager: BrainManager
-    private val alphabet = listOf(
-        "А", "Б", "В", "Г", "Ґ", "Д", "Е", "Є", "Ж", "З", "И", "І", "Ї", "Й", 
-        "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", 
-        "Ш", "Щ", "Ь", "Ю", "Я"
-    )
+    private val alphabet = ("А".."Я").toList().map { it.toString() }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
         val status = view.findViewById<TextView>(R.id.statusText)
-        val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
         val grid = view.findViewById<GridLayout>(R.id.gridInput)
         
         uiController = UIController(grid)
         brainManager = BrainManager(requireContext())
         
-        // Встановлюємо нову архітектуру
-        brainManager.initBrain(intArrayOf(9, 32, 32, alphabet.size))
+        // Вхід 256 (16x16), приховані шари 128, вихід 33 (алфавіт)
+        brainManager.initBrain(intArrayOf(256, 128, 64, alphabet.size))
 
-        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
-
-        // 1. ДОДАТИ ЗРАЗОК
-        view.findViewById<Button>(R.id.btnAddSample).setOnClickListener {
-            brainManager.saveSample(spinner.selectedItemPosition, uiController.getInput())
-            status.text = "Збережено: ${alphabet[spinner.selectedItemPosition]}"
-            uiController.clear()
-        }
-
-        // 2. ВЧИТИ ВСЕ (Клік - вчити, Довгий клік - ВИДАЛИТИ МІЗКИ)
-        view.findViewById<Button>(R.id.btnTrainBatch).apply {
+        // КНОПКА: ЗІБРАТИ ШРИФТИ (Harvest)
+        view.findViewById<Button>(R.id.btnAddSample).apply {
+            text = "ЗІБРАТИ ШРИФТИ"
             setOnClickListener {
-                status.text = "Навчання..."
                 Thread {
-                    try {
-                        brainManager.trainFull(7000) { epoch -> 
-                            activity?.runOnUiThread { status.text = "Епоха: $epoch / 7000" }
-                        }
-                        activity?.runOnUiThread { status.text = "ГОТОВО! Мізки оновлено." }
-                    } catch (e: Exception) {
-                        activity?.runOnUiThread { status.text = "Помилка: ${e.message}" }
+                    brainManager.harvestFonts(alphabet) { msg ->
+                        activity?.runOnUiThread { status.text = msg }
                     }
+                    activity?.runOnUiThread { status.text = "Шрифти зібрано в Documents/ShadowBrain/dataset.txt" }
                 }.start()
             }
-            
-            setOnLongClickListener {
-                val brainFile = File(requireContext().filesDir, "shadow_brain.json")
-                if (brainFile.delete()) {
-                    status.text = "МІЗКИ ВИДАЛЕНО. Перезапусти додаток!"
-                    brainManager.initBrain(intArrayOf(9, 32, 32, alphabet.size))
+        }
+
+        // КНОПКА: ВЧИТИ
+        view.findViewById<Button>(R.id.btnTrainBatch).setOnClickListener {
+            status.text = "Навчання на 100 шрифтах..."
+            Thread {
+                brainManager.trainFull(500) { epoch ->
+                    activity?.runOnUiThread { status.text = "Епоха: $epoch" }
                 }
-                true
-            }
+                activity?.runOnUiThread { status.text = "Навчання завершено!" }
+            }.start()
         }
 
-        // 3. ПЕРЕВІРИТИ
+        // КНОПКА: ПЕРЕВІРИТИ
         view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
-            val result = brainManager.brain?.feedForward(uiController.getInput())?.last()
-            result?.let {
-                val index = it.indices.maxByOrNull { i -> it[i] } ?: 0
-                val confidence = it[index] * 100
-                status.text = "Результат: [${alphabet[index]}] (${String.format("%.1f", confidence)}%)"
+            val output = brainManager.brain?.feedForward(uiController.getInput())?.last()
+            output?.let {
+                val idx = it.indices.maxByOrNull { i -> it[i] } ?: 0
+                status.text = "Це буква: ${alphabet[idx]} (${(it[idx]*100).toInt()}%)"
             }
         }
 
-        // 4. ОЧИСТИТИ (Клік - сітка, Довгий клік - СТАТУС ФАЙЛІВ)
-        view.findViewById<Button>(R.id.btnClear).apply {
-            setOnClickListener { uiController.clear(); status.text = "Сітку очищено" }
-            setOnLongClickListener {
-                val dataFile = File(requireContext().filesDir, "dataset.txt")
-                val brainFile = File(requireContext().filesDir, "shadow_brain.json")
-                val report = "База: ${if(dataFile.exists()) dataFile.readLines().size else 0} | Мізки: ${brainFile.length()/1024} KB"
-                status.text = report
-                true
-            }
-        }
+        view.findViewById<Button>(R.id.btnClear).setOnClickListener { uiController.clear() }
     }
 }

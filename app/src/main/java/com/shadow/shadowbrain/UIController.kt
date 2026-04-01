@@ -1,28 +1,35 @@
-// Responsibility: Керування станом кнопок сітки 3x3
+// Responsibility: Керування сіткою 16x16 для ручного малювання та перевірки
 package com.shadow.shadowbrain
 
 import android.graphics.Color
+import android.view.MotionEvent
 import android.widget.Button
 import android.widget.GridLayout
 
 class UIController(private val grid: GridLayout) {
-    private val cells = DoubleArray(9) { 0.0 }
+    private val size = 16
+    private val cells = DoubleArray(size * size) { 0.0 }
     private val buttons = mutableListOf<Button>()
 
     init {
+        grid.columnCount = size
+        grid.rowCount = size
         val ctx = grid.context
-        for (i in 0 until 9) {
+        
+        for (i in 0 until size * size) {
             val btn = Button(ctx).apply {
                 layoutParams = GridLayout.LayoutParams().apply {
-                    width = 0
-                    height = 0
-                    columnSpec = GridLayout.spec(i % 3, 1f)
-                    rowSpec = GridLayout.spec(i / 3, 1f)
+                    width = 40 // Фіксований розмір для стабільності на мобільному
+                    height = 40
                 }
-                setBackgroundColor(Color.DKGRAY)
-                setOnClickListener { 
-                    cells[i] = if (cells[i] == 0.0) 1.0 else 0.0
-                    this.setBackgroundColor(if (cells[i] == 1.0) Color.CYAN else Color.DKGRAY)
+                setBackgroundColor(Color.BLACK)
+                // Малювання свайпом (Touch)
+                setOnTouchListener { v, event ->
+                    if (event.action == MotionEvent.ACTION_MOVE || event.action == MotionEvent.ACTION_DOWN) {
+                        cells[i] = 1.0
+                        v.setBackgroundColor(Color.CYAN)
+                    }
+                    true
                 }
             }
             buttons.add(btn)
@@ -31,8 +38,9 @@ class UIController(private val grid: GridLayout) {
     }
 
     fun getInput() = cells.copyOf()
+    
     fun clear() {
         cells.fill(0.0)
-        buttons.forEach { it.setBackgroundColor(Color.DKGRAY) }
+        buttons.forEach { it.setBackgroundColor(Color.BLACK) }
     }
 }
