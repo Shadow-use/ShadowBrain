@@ -1,4 +1,4 @@
-// Responsibility: Керування життєвим циклом нейромережі та збереженням даних
+// Responsibility: Робота з базою зразків та масове навчання (Batch Training)
 package com.shadow.shadowbrain
 
 import android.content.Context
@@ -7,48 +7,50 @@ import java.io.File
 
 class BrainManager(private val context: Context) {
     private val gson = Gson()
-    private val fileName = "shadow_brain.json"
+    private val brainFile = File(context.filesDir, "shadow_brain.json")
+    private val dataFile = File(context.filesDir, "dataset.txt")
     
     var brain: NeuralNetwork? = null
 
-    // Ініціалізація: або завантажуємо стару, або створюємо нову
     fun initBrain(layers: IntArray) {
-        val file = File(context.filesDir, fileName)
-        brain = if (file.exists()) {
-            loadBrain()
+        brain = if (brainFile.exists()) {
+            try {
+                gson.fromJson(brainFile.readText(), NeuralNetwork::class.java)
+            } catch (e: Exception) { NeuralNetwork(layers) }
         } else {
             NeuralNetwork(layers)
         }
     }
 
-    fun saveBrain() {
-        brain?.let {
-            val json = gson.toJson(it)
-            context.openFileOutput(fileName, Context.MODE_PRIVATE).use { output ->
-                output.write(json.toByteArray())
-            }
-        }
+    // Зберігаємо малюнок у файл: "ІндексБукви|1,0,1,0,1,0,1,0,1"
+    fun saveSample(labelIndex: Int, input: DoubleArray) {
+        val line = "$labelIndex|${input.joinToString(",")}\n"
+        dataFile.appendText(line)
     }
 
-    private fun loadBrain(): NeuralNetwork? {
-        return try {
-            val file = File(context.filesDir, fileName)
-            val json = file.readText()
-            gson.fromJson(json, NeuralNetwork::class.java)
-        } catch (e: Exception) {
-            null
-        }
-    }
+    // Масове навчання по всій базі
+    fun trainFull(epochs: Int = 5000, onProgress: (Int) -> Unit) {
+        if (!dataFile.exists()) return
+        val lines = dataFile.readLines()
+        if (lines.isEmpty()) return
 
-    // Метод для навчання на всьому алфавіті
-    fun trainOnDataset(dataset: Map<String, DoubleArray>) {
-        // Проганяємо навчання N разів (Epochs)
-        repeat(1000) {
-            dataset.forEach { (label, input) ->
-                // Тут потрібна логіка перетворення label у target array
-                // Наприклад: "А" -> [1.0, 0.0, 0.0...]
+        repeat(epochs) { epoch ->
+            lines.forEach { line ->
+                val parts = line.split("|")
+                val labelIndex = parts[0].toInt()
+                val input = parts[1].split(",").map { it.toDouble() }.toDoubleArray()
+                
+                val target = DoubleArray(brain?.layerSizes?.last() ?: 33) { 0.0 }
+                target[labelIndex] = 1.0
+                
+                brain?.train(input, target)
             }
+            if (epoch % 100 == 0) onProgress(epoch)
         }
         saveBrain()
+    }
+
+    fun saveBrain() {
+        brain?.let { brainFile.writeText(gson.toJson(it)) }
     }
 }

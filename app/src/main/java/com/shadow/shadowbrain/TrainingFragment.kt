@@ -1,4 +1,4 @@
-// Responsibility: Обробка UI навчання, збір даних з сітки та виклик методів нейромережі
+// Responsibility: UI для збору бази даних та запуску масового навчання
 package com.shadow.shadowbrain
 
 import android.os.Bundle
@@ -9,43 +9,44 @@ import androidx.fragment.app.Fragment
 class TrainingFragment : Fragment(R.layout.fragment_training) {
     private lateinit var uiController: UIController
     private lateinit var brainManager: BrainManager
-    private val letters = listOf("А", "Б", "В", "Г", "Д", "Е", "Є") // Для тесту
+    
+    private val alphabet = listOf(
+        "А", "Б", "В", "Г", "Ґ", "Д", "Е", "Є", "Ж", "З", "И", "І", "Ї", "Й", 
+        "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", 
+        "Ш", "Щ", "Ь", "Ю", "Я"
+    )
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        val grid = view.findViewById<GridLayout>(R.id.gridInput)
-        val statusText = view.findViewById<TextView>(R.id.statusText)
+        val status = view.findViewById<TextView>(R.id.statusText)
         val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
+        uiController = UIController(view.findViewById(R.id.gridInput))
         
-        uiController = UIController(grid)
         brainManager = BrainManager(requireContext())
-        brainManager.initBrain(intArrayOf(9, 16, letters.size))
+        brainManager.initBrain(intArrayOf(9, 24, alphabet.size)) // Збільшив Hidden Layer до 24
 
-        // Налаштування списку букв
-        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, letters)
+        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
 
-        // Кнопка ВЧИТИ
-        view.findViewById<Button>(R.id.btnTrain).setOnClickListener {
-            val input = uiController.getInput()
-            val target = DoubleArray(letters.size) { 0.0 }
-            target[spinner.selectedItemPosition] = 1.0
-            
-            // Навчаємо 100 ітерацій за одне натискання
-            repeat(100) { brainManager.brain?.train(input, target) }
-            brainManager.saveBrain()
-            statusText.text = "Навчено для: ${spinner.selectedItem}"
+        // Кнопка: Зберегти зразок (додати в базу)
+        view.findViewById<Button>(R.id.btnTrain).apply {
+            text = "ДОДАТИ ЗРАЗОК"
+            setOnClickListener {
+                brainManager.saveSample(spinner.selectedItemPosition, uiController.getInput())
+                status.text = "Зразок [${spinner.selectedItem}] додано в базу"
+                uiController.clear()
+            }
         }
 
-        // Кнопка ВГАДАТИ
-        view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
-            val input = uiController.getInput()
-            val result = brainManager.brain?.feedForward(input)?.last() ?: return@setOnClickListener
-            
-            val bestMatchIndex = result.indices.maxByOrNull { result[it] } ?: -1
-            val confidence = result[bestMatchIndex] * 100
-            
-            statusText.text = "Результат: ${letters[bestMatchIndex]} (${String.format("%.1f", confidence)}%)"
+        // Кнопка: Масове навчання (Train All)
+        view.findViewById<Button>(R.id.btnPredict).apply {
+            text = "ВЧИТИ ВСЕ (BATCH)"
+            setOnClickListener {
+                status.text = "Навчання... зачекай"
+                // В ідеалі це треба в Coroutine, але для тесту так:
+                brainManager.trainFull { e -> status.text = "Епоха: $e" }
+                status.text = "Мережу навчено на всій базі!"
+            }
         }
     }
 }

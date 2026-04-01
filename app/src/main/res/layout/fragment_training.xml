@@ -1,52 +1,70 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
     android:background="#121212">
 
-    <TextView
-        android:id="@+id/statusText"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="ShadowBrain: Ready"
-        android:textColor="#00FF00"
-        android:textSize="18sp"
-        android:layout_marginBottom="16dp" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <GridLayout
-        android:id="@+id/gridInput"
-        android:layout_width="240dp"
-        android:layout_height="240dp"
-        android:layout_gravity="center"
-        android:columnCount="3"
-        android:rowCount="3">
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ShadowBrain: Ready"
+            android:textColor="#00FF00"
+            android:textSize="18sp"
+            android:layout_marginBottom="16dp" />
+
+        <GridLayout
+            android:id="@+id/gridInput"
+            android:layout_width="240dp"
+            android:layout_height="240dp"
+            android:layout_gravity="center"
+            android:columnCount="3"
+            android:rowCount="3"
+            android:layout_marginBottom="16dp">
         </GridLayout>
 
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="24dp" />
+        <Spinner
+            android:id="@+id/labelSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#333333"
+            android:layout_marginBottom="16dp" />
 
-    <Spinner
-        android:id="@+id/labelSpinner"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="#333333" />
+        <Button
+            android:id="@+id/btnAddSample"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. ДОДАТИ ЗРАЗОК"
+            android:backgroundTint="#2E7D32" />
 
-    <Button
-        android:id="@+id/btnTrain"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="ВЧИТИ (TRAIN)"
-        android:backgroundTint="#2E7D32"
-        android:layout_marginTop="16dp" />
+        <Button
+            android:id="@+id/btnTrainBatch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. ВЧИТИ ВСЕ (BATCH)"
+            android:backgroundTint="#4527A0"
+            android:layout_marginTop="8dp" />
 
-    <Button
-        android:id="@+id/btnPredict"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="ВГАДАТИ (PREDICT)"
-        android:backgroundTint="#1565C0"
-        android:layout_marginTop="8dp" />
+        <Button
+            android:id="@+id/btnPredict"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. ПЕРЕВІРИТИ (PREDICT)"
+            android:backgroundTint="#1565C0"
+            android:layout_marginTop="8dp" />
 
-</LinearLayout>
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ОЧИСТИТИ СІТКУ"
+            android:backgroundTint="#37474F"
+            android:layout_marginTop="24dp" />
+
+    </LinearLayout>
+</ScrollView>
