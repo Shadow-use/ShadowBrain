@@ -1,4 +1,4 @@
-// Responsibility: UI wiring for Progress reporting, Resetting, and Predicting
+// Responsibility: UI with "Train 5 Epochs" and "STOP" functionality
 package com.shadow.shadowbrain
 
 import android.os.Bundle
@@ -19,65 +19,52 @@ class TrainingFragment : Fragment(R.layout.fragment_training) {
         brainManager.initBrain(alphabet.size)
         ui = UIController(view.findViewById(R.id.gridInput))
 
-        val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
-        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
-
-        // 1. ADD / HARVEST
-        view.findViewById<Button>(R.id.btnAddSample).apply {
-            setOnClickListener {
-                brainManager.saveSample(spinner.selectedItemPosition, ui.getInput())
-                status.text = "Зразок [${alphabet[spinner.selectedItemPosition]}] додано"
-                ui.clear()
-            }
-            setOnLongClickListener {
-                status.text = "Збираю шрифти з архіву..."
-                Thread {
-                    brainManager.harvestFonts(alphabet) { msg ->
-                        activity?.runOnUiThread { status.text = msg }
-                    }
-                    activity?.runOnUiThread { status.text = "Архів зібрано. База: ${brainManager.getDatasetSize()} записів" }
-                }.start()
-                true
-            }
-        }
-
-        // 2. TRAIN / RESET BRAIN
+        // КНОПКА: ВЧИТИ 5 ЕПОХ
         view.findViewById<Button>(R.id.btnTrainBatch).apply {
+            text = "ВЧИТИ 5 ЕПОХ"
             setOnClickListener {
+                status.text = "Запуск 5 епох..."
                 Thread {
-                    brainManager.trainFull(500) { ep, cur, total ->
-                        activity?.runOnUiThread { status.text = "Епоха $ep/500 | Прогрес: $cur/$total" }
+                    brainManager.trainStep(5) { ep, cur, total ->
+                        activity?.runOnUiThread { 
+                            status.text = "Епоха $ep/5 | Зразок: $cur/$total" 
+                        }
                     }
-                    activity?.runOnUiThread { status.text = "Навчання завершено!" }
+                    activity?.runOnUiThread { status.text = "5 епох пройдено. Мізки збережено." }
                 }.start()
             }
+            // Довгий клік — повне очищення мізків
             setOnLongClickListener {
                 brainManager.resetBrain()
                 brainManager.initBrain(alphabet.size)
-                status.text = "Мізки очищено (JSON видалено)"
+                status.text = "Мізки видалено (JSON)"
                 true
             }
         }
 
-        // 3. PREDICT (Око нейронки)
+        // КНОПКА: СТОП (Використовуємо кнопку Predict або Clear як Stop під час навчання)
+        view.findViewById<Button>(R.id.btnClear).apply {
+            text = "СТОП / CLEAR"
+            setOnClickListener {
+                brainManager.shouldStop = true
+                ui.clear()
+                status.text = "ЗУПИНКА..."
+            }
+        }
+
+        // РЕШТА КНОПОК (Add Sample, Predict)
+        view.findViewById<Button>(R.id.btnAddSample).setOnClickListener {
+            val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
+            brainManager.saveSample(spinner.selectedItemPosition, ui.getInput())
+            status.text = "Зразок додано"
+            ui.clear()
+        }
+
         view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
-            val input = ui.getInput()
-            brainManager.savePreview(input) // Зберігаємо картинку того, що бачить нейронка
-            
-            val out = brainManager.brain?.feedForward(input)?.last()
+            val out = brainManager.brain?.feedForward(ui.getInput())?.last()
             out?.let {
                 val idx = it.indices.maxByOrNull { i -> it[i] } ?: 0
-                status.text = "Це буква: ${alphabet[idx]} (${(it[idx]*100).toInt()}%)"
-            }
-        }
-
-        // 4. CLEAR GRID / CLEAR DATASET
-        view.findViewById<Button>(R.id.btnClear).apply {
-            setOnClickListener { ui.clear(); status.text = "Сітку очищено" }
-            setOnLongClickListener {
-                brainManager.clearDataset()
-                status.text = "БАЗУ ДАНИХ ВИДАЛЕНО (TXT порожній)"
-                true
+                status.text = "Результат: ${alphabet[idx]} (${(it[idx]*100).toInt()}%)"
             }
         }
     }
