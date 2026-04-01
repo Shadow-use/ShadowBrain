@@ -1,52 +1,47 @@
-// Responsibility: UI для збору бази даних та запуску масового навчання
-package com.shadow.shadowbrain
-
-import android.os.Bundle
-import android.view.View
-import android.widget.*
-import androidx.fragment.app.Fragment
-
-class TrainingFragment : Fragment(R.layout.fragment_training) {
-    private lateinit var uiController: UIController
-    private lateinit var brainManager: BrainManager
+// Responsibility: Зв'язок логіки з оновленими ID з fragment_training.xml
+override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
     
-    private val alphabet = listOf(
-        "А", "Б", "В", "Г", "Ґ", "Д", "Е", "Є", "Ж", "З", "И", "І", "Ї", "Й", 
-        "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", 
-        "Ш", "Щ", "Ь", "Ю", "Я"
-    )
+    val status = view.findViewById<TextView>(R.id.statusText)
+    val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
+    val grid = view.findViewById<GridLayout>(R.id.gridInput)
+    
+    uiController = UIController(grid)
+    brainManager = BrainManager(requireContext())
+    brainManager.initBrain(intArrayOf(9, 24, alphabet.size))
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        
-        val status = view.findViewById<TextView>(R.id.statusText)
-        val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
-        uiController = UIController(view.findViewById(R.id.gridInput))
-        
-        brainManager = BrainManager(requireContext())
-        brainManager.initBrain(intArrayOf(9, 24, alphabet.size)) // Збільшив Hidden Layer до 24
+    spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
 
-        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
+    // 1. ДОДАТИ ЗРАЗОК (Був btnTrain, став btnAddSample)
+    view.findViewById<Button>(R.id.btnAddSample).setOnClickListener {
+        brainManager.saveSample(spinner.selectedItemPosition, uiController.getInput())
+        status.text = "Збережено для [${spinner.selectedItem}]"
+        uiController.clear()
+    }
 
-        // Кнопка: Зберегти зразок (додати в базу)
-        view.findViewById<Button>(R.id.btnTrain).apply {
-            text = "ДОДАТИ ЗРАЗОК"
-            setOnClickListener {
-                brainManager.saveSample(spinner.selectedItemPosition, uiController.getInput())
-                status.text = "Зразок [${spinner.selectedItem}] додано в базу"
-                uiController.clear()
-            }
+    // 2. ВЧИТИ ВСЕ (Batch Training)
+    view.findViewById<Button>(R.id.btnTrainBatch).setOnClickListener {
+        status.text = "Йде навчання (5000 епох)..."
+        // Виконуємо масове навчання
+        brainManager.trainFull { epoch -> 
+            if (epoch % 500 == 0) status.text = "Епоха: $epoch"
         }
+        status.text = "Навчання завершено успішно!"
+    }
 
-        // Кнопка: Масове навчання (Train All)
-        view.findViewById<Button>(R.id.btnPredict).apply {
-            text = "ВЧИТИ ВСЕ (BATCH)"
-            setOnClickListener {
-                status.text = "Навчання... зачекай"
-                // В ідеалі це треба в Coroutine, але для тесту так:
-                brainManager.trainFull { e -> status.text = "Епоха: $e" }
-                status.text = "Мережу навчено на всій базі!"
-            }
+    // 3. ПЕРЕВІРИТИ (Predict)
+    view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
+        val result = brainManager.brain?.feedForward(uiController.getInput())?.last()
+        result?.let {
+            val index = it.indices.maxByOrNull { i -> it[i] } ?: 0
+            val confidence = it[index] * 100
+            status.text = "Це [${alphabet[index]}] (${String.format("%.1f", confidence)}%)"
         }
+    }
+
+    // 4. ОЧИСТИТИ
+    view.findViewById<Button>(R.id.btnClear).setOnClickListener {
+        uiController.clear()
+        status.text = "Сітку очищено"
     }
 }
