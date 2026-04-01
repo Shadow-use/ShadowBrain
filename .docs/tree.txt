@@ -1,0 +1,30 @@
+.
+├── app
+│   ├── build.gradle.kts
+│   ├── debug.keystore
+│   └── src
+│       └── main
+│           ├── AndroidManifest.xml
+│           ├── java
+│           │   └── com
+│           │       └── shadow
+│           │           └── shadowbrain
+│           │               ├── BrainManager.kt
+│           │               ├── MainActivity.kt
+│           │               ├── NeuralNetwork.kt
+│           │               ├── ShadowLogger.kt
+│           │               ├── TrainingFragment.kt
+│           │               └── UIController.kt
+│           └── res
+│               ├── layout
+│               │   ├── activity_main.xml
+│               │   └── fragment_training.xml
+│               └── values
+├── build.gradle.kts
+├── gradle
+│   └── wrapper
+│       └── gradle-wrapper.properties
+├── gradle.properties
+└── settings.gradle.kts
+
+13 directories, 15 files
