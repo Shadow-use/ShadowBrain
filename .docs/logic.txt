@@ -1,7 +1,7 @@
 ### Logical Map (Auto-generated)
 - BrainManager.kt: Робота з базою зразків та масове навчання (Batch Training)
 - UIController.kt: Керування станом кнопок сітки 3x3
-- TrainingFragment.kt: Зв'язок логіки з оновленими ID з fragment_training.xml
+- TrainingFragment.kt: Обробка всіх 4-х кнопок керування нейромережею та логіка навчання
 - ShadowLogger.kt: Глобальне перехоплення та запис критичних помилок у файл
 - MainActivity.kt: Тільки ініціалізація та запуск першого екрану
 - NeuralNetwork.kt: Ядро нейронної мережі з підтримкою динамічних шарів та навчання
