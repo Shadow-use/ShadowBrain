@@ -1,4 +1,4 @@
-// Responsibility: Повний інтерфейс керування з дебаг-функціями для мобільного
+// Responsibility: Повний інтерфейс з функціями очищення бази та перестворення мізків
 package com.shadow.shadowbrain
 
 import android.os.Bundle
@@ -26,7 +26,7 @@ class TrainingFragment : Fragment(R.layout.fragment_training) {
         uiController = UIController(grid)
         brainManager = BrainManager(requireContext())
         
-        // Ініціалізація: 9 входів, два шари по 32 нейрони, 33 виходи
+        // Встановлюємо нову архітектуру
         brainManager.initBrain(intArrayOf(9, 32, 32, alphabet.size))
 
         spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
@@ -34,26 +34,37 @@ class TrainingFragment : Fragment(R.layout.fragment_training) {
         // 1. ДОДАТИ ЗРАЗОК
         view.findViewById<Button>(R.id.btnAddSample).setOnClickListener {
             brainManager.saveSample(spinner.selectedItemPosition, uiController.getInput())
-            status.text = "Збережено для [${spinner.selectedItem}] (інд: ${spinner.selectedItemPosition})"
+            status.text = "Збережено: ${alphabet[spinner.selectedItemPosition]}"
             uiController.clear()
         }
 
-        // 2. ВЧИТИ ВСЕ (Batch Training)
-        view.findViewById<Button>(R.id.btnTrainBatch).setOnClickListener {
-            status.text = "Навчання розпочато..."
-            Thread {
-                try {
-                    brainManager.trainFull(5000) { epoch -> 
-                        activity?.runOnUiThread { status.text = "Епоха: $epoch / 5000" }
+        // 2. ВЧИТИ ВСЕ (Клік - вчити, Довгий клік - ВИДАЛИТИ МІЗКИ)
+        view.findViewById<Button>(R.id.btnTrainBatch).apply {
+            setOnClickListener {
+                status.text = "Навчання..."
+                Thread {
+                    try {
+                        brainManager.trainFull(7000) { epoch -> 
+                            activity?.runOnUiThread { status.text = "Епоха: $epoch / 7000" }
+                        }
+                        activity?.runOnUiThread { status.text = "ГОТОВО! Мізки оновлено." }
+                    } catch (e: Exception) {
+                        activity?.runOnUiThread { status.text = "Помилка: ${e.message}" }
                     }
-                    activity?.runOnUiThread { status.text = "Навчання ЗАВЕРШЕНО!" }
-                } catch (e: Exception) {
-                    activity?.runOnUiThread { status.text = "Помилка: ${e.message}" }
+                }.start()
+            }
+            
+            setOnLongClickListener {
+                val brainFile = File(requireContext().filesDir, "shadow_brain.json")
+                if (brainFile.delete()) {
+                    status.text = "МІЗКИ ВИДАЛЕНО. Перезапусти додаток!"
+                    brainManager.initBrain(intArrayOf(9, 32, 32, alphabet.size))
                 }
-            }.start()
+                true
+            }
         }
 
-        // 3. ПЕРЕВІРИТИ (Predict)
+        // 3. ПЕРЕВІРИТИ
         view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
             val result = brainManager.brain?.feedForward(uiController.getInput())?.last()
             result?.let {
@@ -63,30 +74,14 @@ class TrainingFragment : Fragment(R.layout.fragment_training) {
             }
         }
 
-        // 4. ОЧИСТИТИ (Клік - очистка, Довгий клік - ДЕБАГ ФАЙЛІВ)
+        // 4. ОЧИСТИТИ (Клік - сітка, Довгий клік - СТАТУС ФАЙЛІВ)
         view.findViewById<Button>(R.id.btnClear).apply {
-            setOnClickListener {
-                uiController.clear()
-                status.text = "Сітку очищено"
-            }
-            
+            setOnClickListener { uiController.clear(); status.text = "Сітку очищено" }
             setOnLongClickListener {
                 val dataFile = File(requireContext().filesDir, "dataset.txt")
                 val brainFile = File(requireContext().filesDir, "shadow_brain.json")
-                
-                val report = StringBuilder()
-                if (dataFile.exists()) {
-                    val lines = dataFile.readLines()
-                    report.append("База: ${lines.size} зразків.\n")
-                    if (lines.isNotEmpty()) report.append("Останній: ${lines.last().split("|")[0]}\n")
-                } else report.append("Бази НЕМАЄ.\n")
-                
-                if (brainFile.exists()) {
-                    val size = brainFile.length() / 1024
-                    report.append("Мізки: $size KB.")
-                } else report.append("Мізків НЕМАЄ.")
-                
-                status.text = report.toString()
+                val report = "База: ${if(dataFile.exists()) dataFile.readLines().size else 0} | Мізки: ${brainFile.length()/1024} KB"
+                status.text = report
                 true
             }
         }
