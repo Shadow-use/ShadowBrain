@@ -1,0 +1,94 @@
+=== SHADOW BRAIN ERROR REPORT ===
+Date: Wed Apr  1 17:53:06 EEST 2026
+Run ID: 23853834913
+---------------------------------
+
+[ FAILED STEPS ]
+❌ Build with Gradle
+
+[ LOG EXCERPT ]
+build	Build with Gradle	﻿2026-04-01T14:29:04.2953633Z ##[group]Run if [ ! -f gradlew ]; then
+build	Build with Gradle	2026-04-01T14:29:04.2954837Z [36;1mif [ ! -f gradlew ]; then[0m
+build	Build with Gradle	2026-04-01T14:29:04.2955956Z [36;1m  gradle wrapper --gradle-version 8.7[0m
+build	Build with Gradle	2026-04-01T14:29:04.2957054Z [36;1mfi[0m
+build	Build with Gradle	2026-04-01T14:29:04.2957759Z [36;1mchmod +x gradlew[0m
+build	Build with Gradle	2026-04-01T14:29:04.2958649Z [36;1m./gradlew assembleDebug[0m
+build	Build with Gradle	2026-04-01T14:29:04.2992488Z shell: /usr/bin/bash -e {0}
+build	Build with Gradle	2026-04-01T14:29:04.2993405Z env:
+build	Build with Gradle	2026-04-01T14:29:04.2994473Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+build	Build with Gradle	2026-04-01T14:29:04.2996362Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.18-8/x64
+build	Build with Gradle	2026-04-01T14:29:04.2997814Z ##[endgroup]
+build	Build with Gradle	2026-04-01T14:29:07.1790026Z 
+build	Build with Gradle	2026-04-01T14:29:07.1790757Z Welcome to Gradle 9.4.1!
+build	Build with Gradle	2026-04-01T14:29:07.1791538Z 
+build	Build with Gradle	2026-04-01T14:29:07.1792151Z Here are the highlights of this release:
+build	Build with Gradle	2026-04-01T14:29:07.1793614Z  - Java 26 support
+build	Build with Gradle	2026-04-01T14:29:07.1795813Z  - Non-class-based JVM tests
+build	Build with Gradle	2026-04-01T14:29:07.1797255Z  - Enhanced console progress bar
+build	Build with Gradle	2026-04-01T14:29:07.1797974Z 
+build	Build with Gradle	2026-04-01T14:29:07.1798619Z For more details see https://docs.gradle.org/9.4.1/release-notes.html
+build	Build with Gradle	2026-04-01T14:29:07.1799076Z 
+build	Build with Gradle	2026-04-01T14:29:07.6775417Z Starting a Gradle Daemon (subsequent builds will be faster)
+build	Build with Gradle	2026-04-01T14:30:17.1789289Z > Task :wrapper
+build	Build with Gradle	2026-04-01T14:30:17.2775151Z 
+build	Build with Gradle	2026-04-01T14:30:17.2803019Z [Incubating] Problems report is available at: file:///home/runner/work/ShadowBrain/ShadowBrain/build/reports/problems/problems-report.html
+build	Build with Gradle	2026-04-01T14:30:17.2805326Z 
+build	Build with Gradle	2026-04-01T14:30:17.2807363Z Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+build	Build with Gradle	2026-04-01T14:30:17.2815900Z 
+build	Build with Gradle	2026-04-01T14:30:17.2818403Z You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+build	Build with Gradle	2026-04-01T14:30:17.2820878Z 
+build	Build with Gradle	2026-04-01T14:30:17.2822519Z For more on this, please refer to https://docs.gradle.org/9.4.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+build	Build with Gradle	2026-04-01T14:30:17.2823582Z 
+build	Build with Gradle	2026-04-01T14:30:17.2823758Z BUILD SUCCESSFUL in 1m 12s
+build	Build with Gradle	2026-04-01T14:30:17.2824145Z 1 actionable task: 1 executed
+build	Build with Gradle	2026-04-01T14:30:17.2825280Z Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
+build	Build with Gradle	2026-04-01T14:30:17.6980866Z Downloading https://services.gradle.org/distributions/gradle-8.7-bin.zip
+build	Build with Gradle	2026-04-01T14:30:19.0827648Z ............10%.............20%.............30%.............40%............50%.............60%.............70%.............80%.............90%............100%
+build	Build with Gradle	2026-04-01T14:30:20.1859848Z 
+build	Build with Gradle	2026-04-01T14:30:20.1860471Z Welcome to Gradle 8.7!
+build	Build with Gradle	2026-04-01T14:30:20.1860829Z 
+build	Build with Gradle	2026-04-01T14:30:20.1861658Z Here are the highlights of this release:
+build	Build with Gradle	2026-04-01T14:30:20.1862906Z  - Compiling and testing with Java 22
+build	Build with Gradle	2026-04-01T14:30:20.1863429Z  - Cacheable Groovy script compilation
+build	Build with Gradle	2026-04-01T14:30:20.1863949Z  - New methods in lazy collection properties
+build	Build with Gradle	2026-04-01T14:30:20.1864355Z 
+build	Build with Gradle	2026-04-01T14:30:20.1864704Z For more details see https://docs.gradle.org/8.7/release-notes.html
+build	Build with Gradle	2026-04-01T14:30:20.1865186Z 
+build	Build with Gradle	2026-04-01T14:30:20.2833355Z Starting a Gradle Daemon (subsequent builds will be faster)
+build	Build with Gradle	2026-04-01T14:31:19.2843054Z > Task :app:preBuild UP-TO-DATE
+build	Build with Gradle	2026-04-01T14:31:19.2854797Z > Task :app:preDebugBuild UP-TO-DATE
+build	Build with Gradle	2026-04-01T14:31:19.2870907Z > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+build	Build with Gradle	2026-04-01T14:31:19.2872548Z > Task :app:checkKotlinGradlePluginConfigurationErrors
+build	Build with Gradle	2026-04-01T14:31:29.8837921Z > Task :app:generateDebugResValues
+build	Build with Gradle	2026-04-01T14:31:29.9832944Z > Task :app:checkDebugAarMetadata
+build	Build with Gradle	2026-04-01T14:31:29.9837459Z > Task :app:mapDebugSourceSetPaths
+build	Build with Gradle	2026-04-01T14:31:29.9838028Z > Task :app:generateDebugResources
+build	Build with Gradle	2026-04-01T14:31:32.0823218Z > Task :app:packageDebugResources
+build	Build with Gradle	2026-04-01T14:31:32.4823307Z > Task :app:mergeDebugResources
+build	Build with Gradle	2026-04-01T14:31:32.9843288Z > Task :app:createDebugCompatibleScreenManifests
+build	Build with Gradle	2026-04-01T14:31:32.9846059Z > Task :app:extractDeepLinksDebug
+build	Build with Gradle	2026-04-01T14:31:33.1822157Z 
+build	Build with Gradle	2026-04-01T14:31:33.1857046Z > Task :app:parseDebugLocalResources FAILED
+build	Build with Gradle	2026-04-01T14:31:33.1864124Z [Fatal Error] fragment_training.xml:53:1: Content is not allowed in trailing section.
+build	Build with Gradle	2026-04-01T14:31:33.2821028Z 
+build	Build with Gradle	2026-04-01T14:31:33.2868827Z 
+build	Build with Gradle	2026-04-01T14:31:33.2882995Z FAILURE: Build failed with an exception.
+build	Build with Gradle	2026-04-01T14:31:33.2883572Z > Task :app:processDebugMainManifest
+build	Build with Gradle	2026-04-01T14:31:33.2885375Z 
+build	Build with Gradle	2026-04-01T14:31:33.2886236Z package="com.shadow.shadowbrain" found in source AndroidManifest.xml: /home/runner/work/ShadowBrain/ShadowBrain/app/src/main/AndroidManifest.xml.
+build	Build with Gradle	2026-04-01T14:31:33.2904292Z * What went wrong:
+build	Build with Gradle	2026-04-01T14:31:33.2905176Z Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+build	Build with Gradle	2026-04-01T14:31:33.2909130Z Execution failed for task ':app:parseDebugLocalResources'.
+build	Build with Gradle	2026-04-01T14:31:33.2910553Z Recommendation: remove package="com.shadow.shadowbrain" from the source AndroidManifest.xml: /home/runner/work/ShadowBrain/ShadowBrain/app/src/main/AndroidManifest.xml.
+build	Build with Gradle	2026-04-01T14:31:33.2911986Z 10 actionable tasks: 10 executed
+build	Build with Gradle	2026-04-01T14:31:33.2913609Z > A failure occurred while executing com.android.build.gradle.internal.res.ParseLibraryResourcesTask$ParseResourcesRunnable
+build	Build with Gradle	2026-04-01T14:31:33.2924993Z    > Failed to parse XML file '/home/runner/work/ShadowBrain/ShadowBrain/app/build/intermediates/packaged_res/debug/layout/fragment_training.xml'
+build	Build with Gradle	2026-04-01T14:31:33.2925964Z 
+build	Build with Gradle	2026-04-01T14:31:33.2926079Z * Try:
+build	Build with Gradle	2026-04-01T14:31:33.2926459Z > Run with --stacktrace option to get the stack trace.
+build	Build with Gradle	2026-04-01T14:31:33.2927102Z > Run with --info or --debug option to get more log output.
+build	Build with Gradle	2026-04-01T14:31:33.2927687Z > Run with --scan to get full insights.
+build	Build with Gradle	2026-04-01T14:31:33.2928205Z > Get more help at https://help.gradle.org.
+build	Build with Gradle	2026-04-01T14:31:33.2928564Z 
+build	Build with Gradle	2026-04-01T14:31:33.2928705Z BUILD FAILED in 1m 15s
+build	Build with Gradle	2026-04-01T14:31:33.7716576Z ##[error]Process completed with exit code 1.
