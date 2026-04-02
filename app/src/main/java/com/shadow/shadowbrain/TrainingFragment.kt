@@ -1,4 +1,4 @@
-// Responsibility: UI with "Train 5 Epochs" and "STOP" functionality
+// Responsibility: Orchestrator - linking UI events to specialized atomic managers
 package com.shadow.shadowbrain
 
 import android.os.Bundle
@@ -7,65 +7,72 @@ import android.widget.*
 import androidx.fragment.app.Fragment
 
 class TrainingFragment : Fragment(R.layout.fragment_training) {
-    private lateinit var ui: UIController
-    private lateinit var brainManager: BrainManager
+    private lateinit var gridManager: UIController
+    private lateinit var storage: BrainStorage
+    private lateinit var dataManager: DatasetManager
+    private lateinit var engine: TrainingEngine
+    private lateinit var brain: NeuralNetwork
+
     private val alphabet = listOf("А", "Б", "В", "Г", "Ґ", "Д", "Е", "Є", "Ж", "З", "И", "І", "Ї", "Й", "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч", "Ш", "Щ", "Ь", "Ю", "Я")
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        val status = view.findViewById<TextView>(R.id.statusText)
-        brainManager = BrainManager(requireContext())
-        brainManager.initBrain(alphabet.size)
-        ui = UIController(view.findViewById(R.id.gridInput))
+        // Init Atomic Components
+        storage = BrainStorage(requireContext())
+        dataManager = DatasetManager(requireContext(), storage)
+        brain = storage.load(intArrayOf(256, 128, 64, alphabet.size))
+        engine = TrainingEngine(brain, dataManager, storage)
+        gridManager = UIController(view.findViewById(R.id.gridInput))
 
-        // КНОПКА: ВЧИТИ 5 ЕПОХ
+        val status = view.findViewById<TextView>(R.id.statusText)
+        val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
+        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
+
+        // Train 5 Epochs
         view.findViewById<Button>(R.id.btnTrainBatch).apply {
-            text = "ВЧИТИ 5 ЕПОХ"
             setOnClickListener {
-                status.text = "Запуск 5 епох..."
                 Thread {
-                    brainManager.trainStep(5) { ep, cur, total ->
-                        activity?.runOnUiThread { 
-                            status.text = "Епоха $ep/5 | Зразок: $cur/$total" 
-                        }
+                    engine.run(5) { ep, cur, total ->
+                        activity?.runOnUiThread { status.text = "Епоха $ep/5 | $cur/$total" }
                     }
-                    activity?.runOnUiThread { status.text = "5 епох пройдено. Мізки збережено." }
+                    activity?.runOnUiThread { status.text = "Навчання завершено" }
                 }.start()
             }
-            // Довгий клік — повне очищення мізків
             setOnLongClickListener {
-                brainManager.resetBrain()
-                brainManager.initBrain(alphabet.size)
-                status.text = "Мізки видалено (JSON)"
+                storage.delete()
+                brain = storage.load(intArrayOf(256, 128, 64, alphabet.size))
+                status.text = "Мізки видалено"
                 true
             }
         }
 
-        // КНОПКА: СТОП (Використовуємо кнопку Predict або Clear як Stop під час навчання)
+        // Stop & Clear
         view.findViewById<Button>(R.id.btnClear).apply {
-            text = "СТОП / CLEAR"
+            setOnClickListener { engine.shouldStop = true; gridManager.clear(); status.text = "Стоп" }
+            setOnLongClickListener { dataManager.clear(); status.text = "Базу очищено"; true }
+        }
+
+        // Add & Harvest
+        view.findViewById<Button>(R.id.btnAddSample).apply {
             setOnClickListener {
-                brainManager.shouldStop = true
-                ui.clear()
-                status.text = "ЗУПИНКА..."
+                dataManager.saveSample(spinner.selectedItemPosition, gridManager.getInput())
+                status.text = "Додано: ${alphabet[spinner.selectedItemPosition]}"
+            }
+            setOnLongClickListener {
+                Thread {
+                    dataManager.harvest(alphabet) { msg -> activity?.runOnUiThread { status.text = msg } }
+                    activity?.runOnUiThread { status.text = "Збір завершено" }
+                }.start()
+                true
             }
         }
 
-        // РЕШТА КНОПОК (Add Sample, Predict)
-        view.findViewById<Button>(R.id.btnAddSample).setOnClickListener {
-            val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
-            brainManager.saveSample(spinner.selectedItemPosition, ui.getInput())
-            status.text = "Зразок додано"
-            ui.clear()
-        }
-
+        // Predict
         view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
-            val out = brainManager.brain?.feedForward(ui.getInput())?.last()
-            out?.let {
-                val idx = it.indices.maxByOrNull { i -> it[i] } ?: 0
-                status.text = "Результат: ${alphabet[idx]} (${(it[idx]*100).toInt()}%)"
-            }
+            val out = brain.feedForward(gridManager.getInput()).last()
+            val idx = out.indices.maxByOrNull { out[it] } ?: 0
+            status.text = "Результат: ${alphabet[idx]} (${(out[idx]*100).toInt()}%)"
         }
     }
 }
