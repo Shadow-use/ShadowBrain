@@ -1,3 +1,4 @@
+// Responsibility: Build configuration with Lifecycle, Fragment KTX and Coroutine support
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -31,6 +32,13 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.google.code.gson:gson:2.10.1")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
 
+    // ViewModel та LiveData
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+    
+    // Екстеншни для Фрагментів (потрібно для 'by viewModels()')
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    
+    // Lifecycle Runtime (потрібно для lifecycleScope та repeatOnLifecycle)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
 }
