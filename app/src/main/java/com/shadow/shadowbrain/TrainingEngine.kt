@@ -1,4 +1,4 @@
-// Responsibility: Training loop optimized for Binary data streaming
+// Responsibility: Training loop on data streams
 package com.shadow.shadowbrain
 
 class TrainingEngine(
@@ -11,17 +11,18 @@ class TrainingEngine(
     fun run(epochs: Int, onProgress: (Int, Int, Int) -> Unit) {
         shouldStop = false
         
-        // Зчитуємо бінарні дані один раз у пам'ять
-        val dataset = dataManager.readDataset()
-        if (dataset.isEmpty()) return
+        // Тут ми більше не вантажимо все в RAM, а просто отримуємо Sequence
+        val datasetSequence = dataManager.streamDataset()
+        val totalSamples = dataManager.streamDataset().count() // Можна кешувати розмір
+        
+        if (totalSamples == 0) return
 
         for (epoch in 1..epochs) {
             if (shouldStop) break
             
-            // Перемішуємо для кращого навчання (Stochastic Gradient Descent)
-            val shuffled = dataset.shuffled()
-            
-            shuffled.forEachIndexed { i, sample ->
+            // На жаль, Sequence важко Shuffle без завантаження в RAM. 
+            // Компроміс: тренуємо як є, або вантажимо лише індекси.
+            datasetSequence.forEachIndexed { i, sample ->
                 if (shouldStop) return@forEachIndexed
                 
                 val (label, input) = sample
@@ -29,7 +30,7 @@ class TrainingEngine(
                 target[label] = 1.0
                 
                 brain.train(input, target)
-                if (i % 50 == 0) onProgress(epoch, i, shuffled.size)
+                onProgress(epoch, i + 1, totalSamples)
             }
             storage.save(brain)
         }
