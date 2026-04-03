@@ -1,67 +1,77 @@
-// Responsibility: Business Logic holder - survives rotation, throttles UI updates
+// Responsibility: UI Orchestrator - observing ViewModel state and handling user input
 package com.shadow.shadowbrain
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import android.os.Bundle
+import android.view.View
+import android.widget.*
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.shadow.shadowbrain.ui.PixelGridView
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-class TrainingViewModel(application: Application) : AndroidViewModel(application) {
-    private val storage = BrainStorage(application)
-    private val dataManager = DatasetManager(application, storage)
-    
-    private val _status = MutableStateFlow("ShadowBrain: Ready")
-    val status = _status.asStateFlow()
+class TrainingFragment : Fragment(R.layout.fragment_training) {
 
-    private var brain: NeuralNetwork = storage.load(intArrayOf(256, 128, 64, 33))
-    private val engine = TrainingEngine(brain, dataManager, storage)
+    private val viewModel: TrainingViewModel by viewModels()
+    private lateinit var pixelGrid: PixelGridView
 
-    private var lastUiUpdateTime = 0L
+    private val alphabet = listOf(
+        "А", "Б", "В", "Г", "Ґ", "Д", "Е", "Є", "Ж", "З", "И", "І", "Ї", "Й",
+        "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф", "Х", "Ц", "Ч",
+        "Ш", "Щ", "Ь", "Ю", "Я"
+    )
 
-    fun train(epochs: Int) {
-        viewModelScope.launch(Dispatchers.Default) {
-            engine.run(epochs) { ep, cur, total ->
-                val now = System.currentTimeMillis()
-                if (now - lastUiUpdateTime > 100 || cur == total) {
-                    _status.value = "Epoch $ep | $cur/$total"
-                    lastUiUpdateTime = now
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        pixelGrid = view.findViewById(R.id.gridInput)
+        val status = view.findViewById<TextView>(R.id.statusText)
+        val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
+        
+        spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
+
+        // Підписка на оновлення статусу з ViewModel
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.status.collect { msg ->
+                    status.text = msg
                 }
             }
-            withContext(Dispatchers.Main) {
-                _status.value = "Training Complete"
+        }
+
+        // Кнопка навчання
+        view.findViewById<Button>(R.id.btnTrainBatch).apply {
+            setOnClickListener { viewModel.train(5) }
+            setOnLongClickListener { 
+                viewModel.resetBrain(alphabet.size)
+                true 
             }
         }
-    }
 
-    // НОВИЙ МЕТОД: Збереження ручного зразка
-    fun saveManualSample(labelIndex: Int, input: DoubleArray) {
-        dataManager.saveSample(labelIndex, input)
-        _status.value = "Зразок додано в базу"
-    }
-
-    fun predict(input: DoubleArray): Pair<Int, Int> {
-        dataManager.savePreview(input, "last_predict")
-        val output = brain.feedForward(input).last()
-        val maxIdx = output.indices.maxByOrNull { output[it] } ?: 0
-        return maxIdx to (output[maxIdx] * 100).toInt()
-    }
-
-    fun harvest(alphabet: List<String>) {
-        viewModelScope.launch(Dispatchers.Default) {
-            dataManager.harvest(alphabet) { msg -> _status.value = msg }
-            _status.value = "Harvest Done"
+        // Кнопка додавання зразка / Harvest
+        view.findViewById<Button>(R.id.btnAddSample).apply {
+            setOnClickListener {
+                viewModel.saveManualSample(spinner.selectedItemPosition, pixelGrid.getRawData())
+                pixelGrid.clear()
+            }
+            setOnLongClickListener {
+                viewModel.harvest(alphabet)
+                true
+            }
         }
-    }
 
-    fun stop() { engine.shouldStop = true }
+        // Кнопка передбачення
+        view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
+            val (maxIdx, confidence) = viewModel.predict(pixelGrid.getRawData())
+            status.text = "Результат: ${alphabet[maxIdx]} ($confidence%)"
+        }
 
-    fun resetBrain(alphabetSize: Int) {
-        storage.delete()
-        brain = storage.load(intArrayOf(256, 128, 64, alphabetSize))
-        _status.value = "Модель скинуто"
+        // Кнопка очищення
+        view.findViewById<Button>(R.id.btnClear).setOnClickListener {
+            viewModel.stop()
+            pixelGrid.clear()
+        }
     }
 }

@@ -26,7 +26,6 @@ class TrainingViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.Default) {
             engine.run(epochs) { ep, cur, total ->
                 val now = System.currentTimeMillis()
-                // Throttling: оновлення не частіше ніж кожні 100 мс
                 if (now - lastUiUpdateTime > 100 || cur == total) {
                     _status.value = "Epoch $ep | $cur/$total"
                     lastUiUpdateTime = now
@@ -38,6 +37,11 @@ class TrainingViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun saveManualSample(labelIndex: Int, input: DoubleArray) {
+        dataManager.saveSample(labelIndex, input)
+        _status.value = "Зразок додано"
+    }
+
     fun predict(input: DoubleArray): Pair<Int, Int> {
         dataManager.savePreview(input, "last_predict")
         val output = brain.feedForward(input).last()
@@ -47,9 +51,7 @@ class TrainingViewModel(application: Application) : AndroidViewModel(application
 
     fun harvest(alphabet: List<String>) {
         viewModelScope.launch(Dispatchers.Default) {
-            dataManager.harvest(alphabet) { msg ->
-                _status.value = msg
-            }
+            dataManager.harvest(alphabet) { _status.value = it }
             _status.value = "Harvest Done"
         }
     }
@@ -59,5 +61,6 @@ class TrainingViewModel(application: Application) : AndroidViewModel(application
     fun resetBrain(alphabetSize: Int) {
         storage.delete()
         brain = storage.load(intArrayOf(256, 128, 64, alphabetSize))
+        _status.value = "Модель скинуто"
     }
 }
