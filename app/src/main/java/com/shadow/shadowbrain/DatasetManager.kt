@@ -1,24 +1,23 @@
-// Responsibility: Font harvesting, PNG gallery generation, and dataset.txt I/O
+// Responsibility: High-performance Binary I/O for ML datasets
 package com.shadow.shadowbrain
 
 import android.content.Context
 import android.graphics.*
-import java.io.File
-import java.io.FileOutputStream
+import java.io.*
 
 class DatasetManager(private val context: Context, private val storage: BrainStorage) {
-    private val dataFile get() = File(storage.baseDir, "dataset.txt")
+    private val binFile get() = File(storage.baseDir, "dataset.bin")
     private val samplesDir get() = File(storage.baseDir, "samples").apply { if (!exists()) mkdirs() }
     private val INPUT_RES = 16
 
     fun harvest(alphabet: List<String>, onProgress: (String) -> Unit) {
         val fontFiles = context.assets.list("fonts") ?: return
-        dataFile.writeText("")
+        binFile.delete() // Очищаємо старий бінарник
         samplesDir.deleteRecursively()
         samplesDir.mkdirs()
 
         fontFiles.forEachIndexed { fIdx, fontName ->
-            onProgress("Обробка: $fontName")
+            onProgress("Зір: $fontName")
             val tf = try { Typeface.createFromAsset(context.assets, "fonts/$fontName") } 
                      catch (e: Exception) { null } ?: return@forEachIndexed
 
@@ -30,29 +29,50 @@ class DatasetManager(private val context: Context, private val storage: BrainSto
         }
     }
 
+    // Бінарний запис через DataOutputStream
+    fun saveSample(labelIndex: Int, input: DoubleArray) {
+        val fos = FileOutputStream(binFile, true)
+        val dos = DataOutputStream(BufferedOutputStream(fos))
+        try {
+            dos.writeInt(labelIndex)
+            input.forEach { dos.writeFloat(it.toFloat()) } // Float достатньо для 0.0/1.0
+            dos.flush()
+        } finally {
+            dos.close()
+        }
+    }
+
+    // Швидке зчитування всього датасету
+    fun readDataset(): List<Pair<Int, DoubleArray>> {
+        if (!binFile.exists()) return emptyList()
+        val result = mutableListOf<Pair<Int, DoubleArray>>()
+        val dis = DataInputStream(BufferedInputStream(FileInputStream(binFile)))
+        
+        try {
+            while (dis.available() > 0) {
+                val label = dis.readInt()
+                val vector = DoubleArray(INPUT_RES * INPUT_RES) { dis.readFloat().toDouble() }
+                result.add(label to vector)
+            }
+        } catch (e: EOFException) { /* End of file */ } 
+        finally { dis.close() }
+        
+        return result
+    }
+
+    fun clear() { if (binFile.exists()) binFile.delete() }
+
     private fun renderToVector(char: String, tf: Typeface): DoubleArray {
         val bitmap = Bitmap.createBitmap(INPUT_RES, INPUT_RES, Bitmap.Config.ALPHA_8)
         val canvas = Canvas(bitmap)
         val paint = Paint().apply {
-            typeface = tf
-            textSize = INPUT_RES * 0.8f
-            textAlign = Paint.Align.CENTER
-            color = Color.WHITE
+            typeface = tf; textSize = INPUT_RES * 0.8f; textAlign = Paint.Align.CENTER; color = Color.WHITE
         }
         canvas.drawText(char, INPUT_RES / 2f, INPUT_RES * 0.8f, paint)
-        
         return DoubleArray(INPUT_RES * INPUT_RES) { i ->
             if (Color.alpha(bitmap.getPixel(i % INPUT_RES, i / INPUT_RES)) > 120) 1.0 else 0.0
         }
     }
-
-    fun saveSample(labelIndex: Int, input: DoubleArray) {
-        dataFile.appendText("$labelIndex|${input.joinToString(",")}\n")
-    }
-
-    fun readAllLines(): List<String> = if (dataFile.exists()) dataFile.readLines() else emptyList()
-
-    fun clear() { if (dataFile.exists()) dataFile.delete() }
 
     private fun savePreview(input: DoubleArray, name: String) {
         val bitmap = Bitmap.createBitmap(INPUT_RES, INPUT_RES, Bitmap.Config.ARGB_8888)
