@@ -18,15 +18,12 @@
             android:textSize="18sp"
             android:layout_marginBottom="16dp" />
 
-        <GridLayout
+        <com.shadow.shadowbrain.ui.PixelGridView
             android:id="@+id/gridInput"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
+            android:layout_width="280dp"
+            android:layout_height="280dp"
             android:layout_gravity="center"
-            android:columnCount="3"
-            android:rowCount="3"
-            android:layout_marginBottom="16dp">
-        </GridLayout>
+            android:layout_marginBottom="16dp" />
 
         <Spinner
             android:id="@+id/labelSpinner"
@@ -39,14 +36,14 @@
             android:id="@+id/btnAddSample"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="1. ДОДАТИ ЗРАЗОК"
+            android:text="1. ДОДАТИ / HARVEST (LONG)"
             android:backgroundTint="#2E7D32" />
 
         <Button
             android:id="@+id/btnTrainBatch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="2. ВЧИТИ ВСЕ (BATCH)"
+            android:text="2. ВЧИТИ 5 ЕПОХ / RESET (LONG)"
             android:backgroundTint="#4527A0"
             android:layout_marginTop="8dp" />
 
@@ -62,7 +59,7 @@
             android:id="@+id/btnClear"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="ОЧИСТИТИ СІТКУ"
+            android:text="СТОП / ОЧИСТИТИ"
             android:backgroundTint="#37474F"
             android:layout_marginTop="24dp" />
 

@@ -1,7 +1,9 @@
 ### Logical Map (Auto-generated)
-- BrainManager.kt: Dataset management with a Visual Debug Gallery for all fonts
-- UIController.kt: 16x16 Grid with Toggle Drawing (Draw/Erase)
-- TrainingFragment.kt: UI with "Train 5 Epochs" and "STOP" functionality
+- TrainingEngine.kt: Training loop optimized for Binary data streaming
+- BrainStorage.kt: Persistence layer - saving and loading NeuralNetwork as JSON
+- DatasetManager.kt: High-performance Binary I/O for ML datasets
+- TrainingFragment.kt: UI Orchestrator - coordinating ML logic via Coroutines and Custom View
 - ShadowLogger.kt: Глобальне перехоплення та запис критичних помилок у файл
 - MainActivity.kt: Тільки ініціалізація та запуск першого екрану
-- NeuralNetwork.kt: Ядро нейронної мережі з підтримкою динамічних шарів та навчання
+- NeuralNetwork.kt: High-performance Neural Core with Softmax and Xavier Initialization
+- PixelGridView.kt: High-performance drawing canvas using a single View

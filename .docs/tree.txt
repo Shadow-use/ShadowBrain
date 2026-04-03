@@ -111,12 +111,14 @@
 │           │   └── com
 │           │       └── shadow
 │           │           └── shadowbrain
-│           │               ├── BrainManager.kt
+│           │               ├── BrainStorage.kt
+│           │               ├── DatasetManager.kt
 │           │               ├── MainActivity.kt
 │           │               ├── NeuralNetwork.kt
+│           │               ├── PixelGridView.kt
 │           │               ├── ShadowLogger.kt
-│           │               ├── TrainingFragment.kt
-│           │               └── UIController.kt
+│           │               ├── TrainingEngine.kt
+│           │               └── TrainingFragment.kt
 │           └── res
 │               ├── layout
 │               │   ├── activity_main.xml
@@ -129,4 +131,4 @@
 ├── gradle.properties
 └── settings.gradle.kts
 
-15 directories, 115 files
+15 directories, 117 files
