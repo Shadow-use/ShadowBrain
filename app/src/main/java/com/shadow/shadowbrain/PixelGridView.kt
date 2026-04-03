@@ -14,7 +14,7 @@ class PixelGridView(context: Context, attrs: AttributeSet?) : View(context, attr
     private val paint = Paint().apply { isFilterBitmap = false }
     private val rect = Rect()
     
-    private var isErasing = false // Режим поточного дотику
+    private var isErasing = false // Режим поточного дотику (малювати чи стирати)
 
     override fun onDraw(canvas: Canvas) {
         for (i in pixels.indices) {
@@ -24,7 +24,6 @@ class PixelGridView(context: Context, attrs: AttributeSet?) : View(context, attr
         rect.set(0, 0, width, height)
         canvas.drawBitmap(bitmap, null, rect, paint)
         
-        // Малювання ліній сітки
         val p = Paint().apply { color = Color.DKGRAY; strokeWidth = 1f }
         for (i in 0..size) {
             val pos = i * (width.toFloat() / size)
@@ -40,7 +39,7 @@ class PixelGridView(context: Context, attrs: AttributeSet?) : View(context, attr
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                // Визначаємо режим: якщо клікнули на зафарбоване — стираємо, інакше малюємо
+                // Якщо клікнули на CYAN (1.0) — вмикаємо ластик, інакше малюємо
                 isErasing = pixels[index] == 1.0
                 pixels[index] = if (isErasing) 0.0 else 1.0
                 invalidate()
