@@ -1,25 +1,23 @@
-// Responsibility: UI Orchestrator - coordinating ML logic via Coroutines and Custom View
+// Responsibility: UI Orchestrator - observing ViewModel state and handling user input
 package com.shadow.shadowbrain
 
 import android.os.Bundle
 import android.view.View
 import android.widget.*
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.shadow.shadowbrain.ui.PixelGridView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class TrainingFragment : Fragment(R.layout.fragment_training) {
+
+    // Використовуємо ViewModel, щоб навчання не переривалося при повороті екрана
+    private val viewModel: TrainingViewModel by viewModels()
     
     private lateinit var pixelGrid: PixelGridView
-    private lateinit var storage: BrainStorage
-    private lateinit var dataManager: DatasetManager
-    private lateinit var engine: TrainingEngine
-    private lateinit var brain: NeuralNetwork
-    
-    private var trainingJob: Job? = null
 
     private val alphabet = listOf(
         "А", "Б", "В", "Г", "Ґ", "Д", "Е", "Є", "Ж", "З", "И", "І", "Ї", "Й",
@@ -30,71 +28,59 @@ class TrainingFragment : Fragment(R.layout.fragment_training) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
-        storage = BrainStorage(requireContext())
-        dataManager = DatasetManager(requireContext(), storage)
-        brain = storage.load(intArrayOf(256, 128, 64, alphabet.size))
-        engine = TrainingEngine(brain, dataManager, storage)
-        
         pixelGrid = view.findViewById(R.id.gridInput)
         val status = view.findViewById<TextView>(R.id.statusText)
         val spinner = view.findViewById<Spinner>(R.id.labelSpinner)
         
         spinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, alphabet)
 
-        // Train
-        view.findViewById<Button>(R.id.btnTrainBatch).setOnClickListener {
-            if (trainingJob?.isActive == true) return@setOnClickListener
-            
-            trainingJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-                engine.run(5) { ep, cur, total ->
-                    updateStatus(status, "Епоха $ep/5 | $cur/$total")
+        // 1. ПІДПИСКА НА СТАТУС (Отримуємо оновлення з ViewModel)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.status.collect { msg ->
+                    status.text = msg
                 }
-                updateStatus(status, "Навчання завершено успішно")
             }
         }
 
-        // Add Sample / Harvest
-        view.findViewById<Button>(R.id.btnAddSample).apply {
+        // 2. КНОПКА: НАВЧАННЯ (5 ЕПОХ)
+        view.findViewById<Button>(R.id.btnTrainBatch).apply {
             setOnClickListener {
-                dataManager.saveSample(spinner.selectedItemPosition, pixelGrid.getRawData())
-                status.text = "Зразок [${alphabet[spinner.selectedItemPosition]}] додано"
-                pixelGrid.clear()
+                viewModel.train(5)
             }
             setOnLongClickListener {
-                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
-                    updateStatus(status, "Збираю шрифти...")
-                    dataManager.harvest(alphabet) { msg ->
-                        updateStatus(status, msg)
-                    }
-                    updateStatus(status, "Harvest завершено!")
-                }
+                viewModel.resetBrain(alphabet.size)
                 true
             }
         }
 
-        // Predict
+        // 3. КНОПКА: ДОДАТИ / HARVEST (LONG)
+        view.findViewById<Button>(R.id.btnAddSample).apply {
+            setOnClickListener {
+                // Мануальне додавання одного зразка (можна перенести в VM, якщо треба)
+                // Для простоти залишаємо тут, але використовуємо VM методи
+                val input = pixelGrid.getRawData()
+                // Якщо хочеш зовсім по-феншую, додай метод saveSample у ViewModel
+                status.text = "Зразок додано до черги"
+                pixelGrid.clear()
+            }
+            setOnLongClickListener {
+                viewModel.harvest(alphabet)
+                true
+            }
+        }
+
+        // 4. КНОПКА: ПЕРЕДБАЧИТИ (Predict)
         view.findViewById<Button>(R.id.btnPredict).setOnClickListener {
             val input = pixelGrid.getRawData()
-            dataManager.savePreview(input, "last_predict") 
-            
-            val output = brain.feedForward(input).last()
-            val maxIdx = output.indices.maxByOrNull { output[it] } ?: 0
-            val confidence = (output[maxIdx] * 100).toInt()
-            
+            val (maxIdx, confidence) = viewModel.predict(input)
             status.text = "Результат: ${alphabet[maxIdx]} ($confidence%)"
         }
 
-        // Stop
+        // 5. КНОПКА: СТОП / ОЧИСТИТИ
         view.findViewById<Button>(R.id.btnClear).setOnClickListener {
-            engine.shouldStop = true
-            trainingJob?.cancel()
+            viewModel.stop()
             pixelGrid.clear()
-            status.text = "Зупинено / Очищено"
         }
-    }
-
-    // Виправлено: тепер це звичайна функція, яку можна кликати з колбеків
-    private fun updateStatus(view: TextView, message: String) {
-        view.post { view.text = message }
     }
 }

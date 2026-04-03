@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TrainingViewModel(application: Application) : AndroidViewModel(application) {
     private val storage = BrainStorage(application)
@@ -25,13 +26,15 @@ class TrainingViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch(Dispatchers.Default) {
             engine.run(epochs) { ep, cur, total ->
                 val now = System.currentTimeMillis()
-                // Throttling: оновлюємо UI не частіше ніж кожні 100 мс
+                // Throttling: оновлення не частіше ніж кожні 100 мс
                 if (now - lastUiUpdateTime > 100 || cur == total) {
                     _status.value = "Epoch $ep | $cur/$total"
                     lastUiUpdateTime = now
                 }
             }
-            _status.value = "Training Complete"
+            withContext(Dispatchers.Main) {
+                _status.value = "Training Complete"
+            }
         }
     }
 
@@ -44,12 +47,15 @@ class TrainingViewModel(application: Application) : AndroidViewModel(application
 
     fun harvest(alphabet: List<String>) {
         viewModelScope.launch(Dispatchers.Default) {
-            dataManager.harvest(alphabet) { _status.value = it }
+            dataManager.harvest(alphabet) { msg ->
+                _status.value = msg
+            }
             _status.value = "Harvest Done"
         }
     }
 
     fun stop() { engine.shouldStop = true }
+
     fun resetBrain(alphabetSize: Int) {
         storage.delete()
         brain = storage.load(intArrayOf(256, 128, 64, alphabetSize))
