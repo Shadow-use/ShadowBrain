@@ -1,4 +1,3 @@
-// Responsibility: Training loop on data streams
 package com.shadow.shadowbrain
 
 class TrainingEngine(
@@ -10,28 +9,26 @@ class TrainingEngine(
 
     fun run(epochs: Int, onProgress: (Int, Int, Int) -> Unit) {
         shouldStop = false
-        
-        // Тут ми більше не вантажимо все в RAM, а просто отримуємо Sequence
-        val datasetSequence = dataManager.streamDataset()
-        val totalSamples = dataManager.streamDataset().count() // Можна кешувати розмір
-        
-        if (totalSamples == 0) return
+        val count = dataManager.getSamplesCount()
+        if (count == 0) return
+
+        val indices = (0 until count).toMutableList()
 
         for (epoch in 1..epochs) {
             if (shouldStop) break
-            
-            // На жаль, Sequence важко Shuffle без завантаження в RAM. 
-            // Компроміс: тренуємо як є, або вантажимо лише індекси.
-            datasetSequence.forEachIndexed { i, sample ->
+            indices.shuffle() // Справжній Random Shuffle кожного разу
+
+            indices.forEachIndexed { i, idx ->
                 if (shouldStop) return@forEachIndexed
                 
-                val (label, input) = sample
+                val (label, input) = dataManager.readSample(idx)
                 val target = DoubleArray(brain.layerSizes.last()) { 0.0 }
                 target[label] = 1.0
                 
                 brain.train(input, target)
-                onProgress(epoch, i + 1, totalSamples)
+                if (i % 20 == 0) onProgress(epoch, i + 1, count)
             }
+            // Зберігаємо тільки після закінчення епохи
             storage.save(brain)
         }
     }

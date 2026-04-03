@@ -1,4 +1,3 @@
-// Responsibility: High-performance drawing with smart toggle/erase logic
 package com.shadow.shadowbrain.ui
 
 import android.content.Context
@@ -12,46 +11,52 @@ class PixelGridView(context: Context, attrs: AttributeSet?) : View(context, attr
     private val pixels = DoubleArray(size * size) { 0.0 }
     private val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     private val paint = Paint().apply { isFilterBitmap = false }
-    private val rect = Rect()
-    
-    private var isErasing = false // Режим поточного дотику (малювати чи стирати)
+    private val gridPaint = Paint().apply { color = Color.DKGRAY; strokeWidth = 1f }
+    private var isErasing = false
+
+    init { updateBitmap() }
+
+    private fun updateBitmap() {
+        for (i in pixels.indices) {
+            bitmap.setPixel(i % size, i / size, if (pixels[i] == 1.0) Color.CYAN else Color.BLACK)
+        }
+    }
 
     override fun onDraw(canvas: Canvas) {
-        for (i in pixels.indices) {
-            val color = if (pixels[i] == 1.0) Color.CYAN else Color.BLACK
-            bitmap.setPixel(i % size, i / size, color)
-        }
-        rect.set(0, 0, width, height)
+        val rect = Rect(0, 0, width, height)
         canvas.drawBitmap(bitmap, null, rect, paint)
         
-        val p = Paint().apply { color = Color.DKGRAY; strokeWidth = 1f }
+        val step = width.toFloat() / size
         for (i in 0..size) {
-            val pos = i * (width.toFloat() / size)
-            canvas.drawLine(pos, 0f, pos, height.toFloat(), p)
-            canvas.drawLine(0f, pos, width.toFloat(), pos, p)
+            canvas.drawLine(i * step, 0f, i * step, height.toFloat(), gridPaint)
+            canvas.drawLine(0f, i * step, width.toFloat(), i * step, gridPaint)
         }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val x = (event.x / (width / size)).toInt().coerceIn(0, size - 1)
         val y = (event.y / (height / size)).toInt().coerceIn(0, size - 1)
-        val index = y * size + x
+        val idx = y * size + x
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                // Якщо клікнули на CYAN (1.0) — вмикаємо ластик, інакше малюємо
-                isErasing = pixels[index] == 1.0
-                pixels[index] = if (isErasing) 0.0 else 1.0
+                isErasing = pixels[idx] == 1.0
+                pixels[idx] = if (isErasing) 0.0 else 1.0
+                updateBitmap()
                 invalidate()
             }
             MotionEvent.ACTION_MOVE -> {
-                pixels[index] = if (isErasing) 0.0 else 1.0
-                invalidate()
+                val newVal = if (isErasing) 0.0 else 1.0
+                if (pixels[idx] != newVal) {
+                    pixels[idx] = newVal
+                    updateBitmap()
+                    invalidate()
+                }
             }
         }
         return true
     }
 
     fun getRawData() = pixels.copyOf()
-    fun clear() { pixels.fill(0.0); invalidate() }
+    fun clear() { pixels.fill(0.0); updateBitmap(); invalidate() }
 }
